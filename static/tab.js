@@ -2,9 +2,9 @@ class Tab {
     constructor(browser, background = false) {
         this.browser = browser;
 
-        this.tabEl = this.browser.chromeTabs.addTab({}, {background: true});
+        this.tabEl = this.browser.chromeTabs.addTab({}, { background: true });
         this.browser.tabs.set(this.tabEl, this);
-        
+
         this.iframe = document.createElement("iframe");
         this.iframe.title = "Tab Contents";
         this.iframe.classList.add("browserTabContents");
@@ -18,7 +18,7 @@ class Tab {
         this.isDevToolsActive = false;
         this.handleUnload();
 
-        if(!background) this.browser.chromeTabs.setCurrentTab(this.tabEl);
+        if (!background) this.browser.chromeTabs.setCurrentTab(this.tabEl);
     }
 
     reinjectTheme() {
@@ -29,8 +29,8 @@ class Tab {
     handleUnload() {
         var self = this;
         setTimeout(() => {
-            if(!self.iframe || !self.iframe.contentWindow) return;
-            self.iframe.contentWindow.addEventListener("DOMContentLoaded", () => { 
+            if (!self.iframe || !self.iframe.contentWindow) return;
+            self.iframe.contentWindow.addEventListener("DOMContentLoaded", () => {
                 self.handleOnload();
             });
             self.iframe.contentWindow.addEventListener("load", () => { self.browser.extensions.injectLoaded(self.currentUrl, self.iframe) });
@@ -52,6 +52,14 @@ class Tab {
         } else {
             url = url.replace(window.location.origin + baseUrlFor(this.browser.settings.getSetting("currentProxyId")), '')
             url = decodeUrl(url, this.browser.settings.getSetting("currentProxyId"));
+            if (!url.startsWith("http") && !url.startsWith("https")) {
+                this.handleHistoryBack();
+                top.anura.dialog.confirm(`This website wants to open ${url}`).then((res) => {
+                    if (res === true) {
+                        top.anura.uri.handle(url);
+                    }
+                })
+            }
         }
         this.currentUrl = url;
 
@@ -69,13 +77,13 @@ class Tab {
             e.removeAttribute("target");
         });
 
-        if(this.isActive) this.setBrowserAttributes();
+        if (this.isActive) this.setBrowserAttributes();
 
         var self = this;
         (async (url) => {
             // get favicon of iframe
             var favi = null;
-            if(url.startsWith(this.browser.resourcesProtocol)) {
+            if (url.startsWith(this.browser.resourcesProtocol)) {
                 favi = getIconNoFallback(self.iframe.contentWindow.document);
             } else if (url != "") {
                 var faviUrl = getIcon(self.iframe.contentWindow.document, new URL(url));
@@ -87,7 +95,7 @@ class Tab {
                        LOOKING AT YOU, mercurywork.shop! seriously, what server does this??? */
                     blob.type.includes("image")
                 ) {
-                    favi = await blobToDataUrl(blob); 
+                    favi = await blobToDataUrl(blob);
                 }
             }
 
@@ -98,7 +106,7 @@ class Tab {
                 favi = this.browser.resourcesPrefix + "darkfavi.png";
             }
 
-            if(url != this.browser.settings.getSetting("startUrl")) this.browser.history.push(url, title, favi);
+            if (url != this.browser.settings.getSetting("startUrl")) this.browser.history.push(url, title, favi);
             this.currentFavi = favi;
 
             // update tab
@@ -140,52 +148,52 @@ class Tab {
         const iframeWindow = this.iframe.contentWindow;
         let state = this.isDevToolsActive;
         if (!iframeWindow.eruda) {
-          iframeWindow.eval(await (await fetch ('/libs/eruda.js')).text())
-          this.isDevToolsActive = true;
-          state = true;
+            iframeWindow.eval(await (await fetch('/libs/eruda.js')).text())
+            this.isDevToolsActive = true;
+            state = true;
         }
-    
+
         if (!iframeWindow.eruda._isInit) iframeWindow.eruda.init();
-    
+
         const btnBk = iframeWindow.eruda._entryBtn._$el[0].cloneNode(true);
         btnBk.style.display = "none";
         iframeWindow.eruda._entryBtn._$el[0].parentElement.replaceChild(
-          btnBk,
-          iframeWindow.eruda._entryBtn._$el[0]
+            btnBk,
+            iframeWindow.eruda._entryBtn._$el[0]
         );
         btnBk.onclick = () => {
-          btnBk.style.display = "none";
-          iframeWindow.eruda.hide();
+            btnBk.style.display = "none";
+            iframeWindow.eruda.hide();
         };
         iframeWindow.eruda._entryBtn._$el[0] = btnBk;
         btnBk.setAttribute("style", "display: flex; position: fixed; bottom: 0; right: 0; margin-right: 20px; margin-bottom: 20px;")
-    
+
         if (state) {
-          btnBk.style.display = "flex";
-          iframeWindow.eruda.show();
-        } else {
-          if (
-            state !== undefined ||
-            iframeWindow.eruda._shadowRoot.querySelector(".eruda-dev-tools").style
-              .display !== "none"
-          ) {
-            this.isDevToolsActive = false;
-            btnBk.style.display = "none";
-            iframeWindow.eruda.hide();
-          } else {
             btnBk.style.display = "flex";
             iframeWindow.eruda.show();
-          }
+        } else {
+            if (
+                state !== undefined ||
+                iframeWindow.eruda._shadowRoot.querySelector(".eruda-dev-tools").style
+                    .display !== "none"
+            ) {
+                this.isDevToolsActive = false;
+                btnBk.style.display = "none";
+                iframeWindow.eruda.hide();
+            } else {
+                btnBk.style.display = "flex";
+                iframeWindow.eruda.show();
+            }
         }
     }
-    
+
 
     setBrowserAttributes() {
         this.browser.addressBar.value = this.currentUrl;
         this.browser.browserTitle = this.currentTitle + this.browser.titleSuffix;
         document.title = this.browser.browserTitle;
     }
-    
+
     navigateTo(url, callback) {
         var self = this;
         // TODO: allow registering custom protocols and clean this up
@@ -197,7 +205,7 @@ class Tab {
                 url = url + ".html"
             }
             this.iframe.src = url;
-            if(callback) callback();
+            if (callback) callback();
         } else if (url.startsWith("javascript:")) {
             let el = this.iframe.contentWindow.document.createElement("script");
             el.textContent = url;
@@ -207,19 +215,19 @@ class Tab {
             if (hasHttps(url)) {
                 proxyUsing(url, this.browser.settings.getSetting("currentProxyId"), (url) => {
                     self.iframe.src = url;
-                    if(callback) callback();
+                    if (callback) callback();
                 });
             } else {
                 proxyUsing('https://' + url, this.browser.settings.getSetting("currentProxyId"), (url) => {
                     self.iframe.src = url;
-                    if(callback) callback();
+                    if (callback) callback();
                 })
             }
             return;
         } else {
             proxyUsing(this.browser.settings.getSetting("searchEngineUrl") + url, this.browser.settings.getSetting("currentProxyId"), (url) => {
                 self.iframe.src = url;
-                if(callback) callback();
+                if (callback) callback();
             });
         }
     }
